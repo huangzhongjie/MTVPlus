@@ -407,6 +407,7 @@ export default function MusicPage() {
         playProgressSec: playTime,
         lastPlayedAt,
         lastQuality: quality,
+        createdAt: record.timestamp,
       }),
     });
   };
@@ -743,6 +744,7 @@ export default function MusicPage() {
         lastPlayedAt: baseTime + i,
         playCount: 1,
         lastQuality: quality,
+        createdAt: baseTime + i,
       }));
 
       await fetch('/api/music/v2/history', {
@@ -930,6 +932,7 @@ export default function MusicPage() {
         lastPlayedAt: baseTime + i,
         playCount: 1,
         lastQuality: quality,
+        createdAt: baseTime + i,
       }));
 
       // 一次性批量添加所有歌曲
@@ -1131,8 +1134,10 @@ export default function MusicPage() {
       setShowPlayer(true);
       setLyrics([]); // 清空旧歌词
 
-      // 添加到播放记录和播放列表
-      const record: PlayRecord = {
+      // 添加到播放记录和播放列表。timestamp 表示入队时间，不能在再次播放时刷新，
+      // 否则会破坏按 createdAt/timestamp 维护的播放队列顺序。
+      const existingRecord = playRecords.find(r => r.platform === platform && r.id === song.id);
+      const record: PlayRecord = existingRecord || {
         platform: platform,
         id: song.id,
         playTime: 0, // 初始播放时间
@@ -1146,11 +1151,11 @@ export default function MusicPage() {
       setPlayRecords(prev => {
         const existingIndex = prev.findIndex(r => r.platform === record.platform && r.id === record.id);
         if (existingIndex >= 0) {
-          // 记录已存在，更新时间戳但不重置播放时间
+          // 记录已存在：保持原位置和原 timestamp，只补齐可能变化的时长信息。
           const updated = [...prev];
           updated[existingIndex] = {
             ...updated[existingIndex],
-            timestamp: Date.now(),
+            duration: updated[existingIndex].duration || song.duration || 0,
           };
           return updated;
         } else {

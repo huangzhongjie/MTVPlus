@@ -1404,7 +1404,7 @@ export class PostgresStorage implements IStorage {
     try {
       const results = await this.db
         // 按队列顺序返回；当前播放项由最大 last_played_at 决定
-        .prepare('SELECT * FROM music_v2_history WHERE username = $1 ORDER BY created_at ASC, last_played_at ASC')
+        .prepare('SELECT * FROM music_v2_history WHERE username = $1 ORDER BY created_at ASC, id ASC')
         .bind(userName)
         .all();
 
